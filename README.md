@@ -251,7 +251,8 @@ WHERE ingest_time > date_trunc('minute', now()) - interval '5 minutes' LIMIT 15;
 ## In the Psql console copy and paste the following to create a report for the top 10 urls in the last 5 minutes. If you observe the query uses topn_union_agg to aggregate the minutely aggregates over the last 5 minutes.
 ```
 SELECT (topn(topn_agg,10)).item as top_urls from (
-SELECT topn_union_agg(http_request_1min.top_urls_1000) topn_agg FROM http_request_1min WHERE ingest_time > date_trunc('minute', now()) - '5 minutes'::interval) a; 
+SELECT topn_union_agg(http_request_1min.top_urls_1000) topn_agg 
+FROM http_request_1min WHERE ingest_time > date_trunc('minute', now()) - '5 minutes'::interval) a; 
 ```
 
 
