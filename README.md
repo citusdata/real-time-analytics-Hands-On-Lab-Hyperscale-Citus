@@ -43,8 +43,4 @@ minute timestamptz PRIMARY KEY,
 
 CHECK (minute = date_trunc('minute', minute))
 );
-
-
-SELECT create_distributed_table('http_request',      'site_id');
-SELECT create_distributed_table('http_request_1min', 'site_id');
 ```
