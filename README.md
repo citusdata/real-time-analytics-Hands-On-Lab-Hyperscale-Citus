@@ -189,7 +189,8 @@ $$ LANGUAGE plpgsql;
 ## In the Psql console copy and paste the following to compute distinct IP counts over time
 ```
 SELECT site_id, ingest_time as minute, request_count, success_count, 
-error_count, sum_response_time_msec/request_count as average_response_time_msec, hll_cardinality(distinct_ip_addresses)::bigint AS distinct_ip_address_count 
+error_count, sum_response_time_msec/request_count as average_response_time_msec, 
+hll_cardinality(distinct_ip_addresses)::bigint AS distinct_ip_address_count 
 FROM http_request_1min 
 WHERE ingest_time > date_trunc('minute', now()) - interval '5 minutes' LIMIT 15;
 ```
