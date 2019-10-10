@@ -44,3 +44,31 @@ minute timestamptz PRIMARY KEY,
 CHECK (minute = date_trunc('minute', minute))
 );
 ```
+
+
+## In the Cloud Shell editor copy and paste (use Contorl+V key to paste in the editor) the following to create the http_request load generator
+```
+-- loop continuously writing records every 1/4 second
+DO $$
+BEGIN LOOP
+    INSERT INTO http_request (
+    site_id, ingest_time, url, request_country,
+    ip_address, status_code, response_time_msec
+    ) VALUES (
+    trunc(random()*32), clock_timestamp(),
+    concat('http://example.com/', md5(random()::text)),
+    ('{China,India,USA,Indonesia}'::text[])[ceil(random()*4)],
+    concat(
+        trunc(random()*250 + 2), '.',
+        trunc(random()*250 + 2), '.',
+        trunc(random()*250 + 2), '.',
+        trunc(random()*250 + 2)
+    )::inet,
+    ('{200,404}'::int[])[ceil(random()*2)],
+    5+trunc(random()*150)
+    );
+    COMMIT;
+    PERFORM pg_sleep(random() * 0.25);
+END LOOP;
+END $$;
+```
