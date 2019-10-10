@@ -72,3 +72,11 @@ BEGIN LOOP
 END LOOP;
 END $$;
 ```
+
+## In the Psql console copy and paste the following to see average response time for sites
+
+SELECT site_id, ingest_time as minute, request_count,
+    success_count, error_count, sum_response_time_msec/request_count as average_response_time_msec
+FROM http_request_1min
+WHERE ingest_time > date_trunc('minute', now()) - '5 minutes'::interval
+LIMIT 15;
