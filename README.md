@@ -125,3 +125,12 @@ UPDATE latest_rollup SET minute = curr_rollup_time;
 END;
 $$ LANGUAGE plpgsql;
 ```
+
+## In the Psql console copy and paste the following to run the query on the 1 minute aggregated table
+```
+SELECT site_id, ingest_time as minute, request_count,
+    success_count, error_count, sum_response_time_msec/request_count as average_response_time_msec
+FROM http_request_1min
+WHERE ingest_time > date_trunc('minute', now()) - '5 minutes'::interval
+LIMIT 15;
+```
