@@ -1,3 +1,4 @@
+## In the Psql console copy and paste the following to create the tables
 ```
 -- this is run on the coordinator
 CREATE TABLE http_request (
