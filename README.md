@@ -195,3 +195,47 @@ FROM http_request_1min
 WHERE ingest_time > date_trunc('minute', now()) - interval '5 minutes' LIMIT 15;
 ```
 
+
+## Topn rollup function
+
+```
+CREATE OR REPLACE FUNCTION rollup_http_request() RETURNS void AS $$
+DECLARE
+curr_rollup_time timestamptz := date_trunc('minute', now());
+last_rollup_time timestamptz := minute from latest_rollup;
+BEGIN
+INSERT INTO http_request_1min (
+    site_id, ingest_time, request_country, request_count,
+    success_count, error_count, sum_response_time_msec,
+    distinct_ip_addresses,top_urls_1000 
+) SELECT
+    site_id,
+    date_trunc('minute', ingest_time),
+    request_country,
+    COUNT(1) as request_count,
+    SUM(CASE WHEN (status_code between 200 and 299) THEN 1 ELSE 0 END) as success_count,
+    SUM(CASE WHEN (status_code between 200 and 299) THEN 0 ELSE 1 END) as error_count,
+    SUM(response_time_msec) AS sum_response_time_msec,
+    hll_add_agg(hll_hash_text(ip_address)) AS distinct_ip_addresses,
+    topn_add_agg(url::text) AS top_urls_1000
+FROM http_request
+-- roll up only data new since last_rollup_time
+WHERE date_trunc('minute', ingest_time) <@
+        tstzrange(last_rollup_time, curr_rollup_time, '(]')
+GROUP BY 1, 2,3
+ON CONFLICT (site_id,ingest_time,request_country)
+DO UPDATE
+SET request_count = http_request_1min.request_count + excluded.request_count,
+success_count = http_request_1min.success_count + excluded.success_count,
+error_count = http_request_1min.error_count + excluded.error_count,
+sum_response_time_msec = http_request_1min.sum_response_time_msec + excluded.sum_response_time_msec,
+distinct_ip_addresses = hll_union(http_request_1min.distinct_ip_addresses,excluded.distinct_ip_addresses),
+top_urls_1000 = topn_union(http_request_1min.top_urls_1000, excluded.top_urls_1000);
+
+-- update the value in latest_rollup so that next time we run the
+-- rollup it will operate on data newer than curr_rollup_time
+UPDATE latest_rollup SET minute = curr_rollup_time;
+END;
+$$ LANGUAGE plpgsql;
+```
+
