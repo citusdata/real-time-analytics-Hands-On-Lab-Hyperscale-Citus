@@ -239,3 +239,13 @@ END;
 $$ LANGUAGE plpgsql;
 ```
 
+## Dashboard query to get the top urls per minute over the last 5 minutes. If you observe we query the top_urls_1000 column using the topn() function to get only the top most url per minute.
+```
+SELECT site_id, ingest_time as minute, request_count, success_count,
+error_count, sum_response_time_msec/request_count as average_response_time_msec,
+hll_cardinality(distinct_ip_addresses)::bigint AS distinct_ip_address_count
+,(topn(http_request_1min.top_urls_1000,1)).*
+FROM http_request_1min
+WHERE ingest_time > date_trunc('minute', now()) - interval '5 minutes' LIMIT 15;
+```
+
