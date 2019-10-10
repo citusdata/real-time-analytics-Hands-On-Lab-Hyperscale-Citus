@@ -74,7 +74,6 @@ END $$;
 ```
 
 ## In the Psql console copy and paste the following to see average response time for sites
-
 ```
 SELECT
 site_id,
@@ -88,4 +87,41 @@ WHERE date_trunc('minute', ingest_time) > now() - '5 minutes'::interval
 GROUP BY site_id, minute
 ORDER BY minute ASC
 LIMIT 15;
+```
+
+## In the Psql console copy and paste the following to create the rollup_http_request function
+```
+-- initialize to a time long ago
+INSERT INTO latest_rollup VALUES ('10-10-1901');
+
+-- function to do the rollup
+CREATE OR REPLACE FUNCTION rollup_http_request() RETURNS void AS $$
+DECLARE
+curr_rollup_time timestamptz := date_trunc('minute', now());
+last_rollup_time timestamptz := minute from latest_rollup;
+BEGIN
+INSERT INTO http_request_1min (
+    site_id, ingest_time, request_country, request_count,
+    success_count, error_count, sum_response_time_msec,
+    distinct_ip_addresses
+) SELECT
+    site_id,
+    date_trunc('minute', ingest_time),
+    request_country,
+    COUNT(1) as request_count,
+    SUM(CASE WHEN (status_code between 200 and 299) THEN 1 ELSE 0 END) as success_count,
+    SUM(CASE WHEN (status_code between 200 and 299) THEN 0 ELSE 1 END) as error_count,
+    SUM(response_time_msec) AS sum_response_time_msec,
+    hll_add_agg(hll_hash_text(ip_address)) AS distinct_ip_addresses
+FROM http_request
+-- roll up only data new since last_rollup_time
+WHERE date_trunc('minute', ingest_time) <@
+        tstzrange(last_rollup_time, curr_rollup_time, '(]')
+GROUP BY 1, 2,3;
+
+-- update the value in latest_rollup so that next time we run the
+-- rollup it will operate on data newer than curr_rollup_time
+UPDATE latest_rollup SET minute = curr_rollup_time;
+END;
+$$ LANGUAGE plpgsql;
 ```
