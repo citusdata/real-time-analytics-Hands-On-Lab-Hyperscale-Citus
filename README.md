@@ -134,3 +134,8 @@ FROM http_request_1min
 WHERE ingest_time > date_trunc('minute', now()) - '5 minutes'::interval
 LIMIT 15;
 ```
+
+## As an example, suppose the retention for the raw data is 3 days, you could DROP the partition(s) that are earlier than 3 days. 
+```
+DROP TABLE http_request_p<YYYY-MM-DD>
+```
