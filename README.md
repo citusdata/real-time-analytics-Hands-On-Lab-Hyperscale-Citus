@@ -141,7 +141,7 @@ LIMIT 15;
 
 ## As an example, suppose the retention for the raw data is 3 days, you could DROP the partition(s) that are earlier than 3 days. 
 ```
-DROP TABLE http_request_p<YYYY-MM-DD>
+DROP TABLE http_request_pYYYY_MM_DD;
 ```
 
 ## In the Psql console copy and paste the following to add it to the query of our rollup function
