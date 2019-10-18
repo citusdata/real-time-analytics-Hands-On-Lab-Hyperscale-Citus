@@ -254,26 +254,3 @@ SELECT (topn(topn_agg,10)).item as top_urls from (
 SELECT topn_union_agg(http_request_1min.top_urls_1000) topn_agg 
 FROM http_request_1min WHERE ingest_time > date_trunc('minute', now()) - '5 minutes'::interval) a; 
 ```
-
-## Let us create a separate rollup table for power bi and load some data:
-```
-CREATE TABLE powerbi_rollup
-(
-site_id integer, 
-ingest_time timestamp, 
-request_country text, 
-error_count integer, 
-success_count integer, 
-request_count integer, 
-sum_response_time_msec integer,
-PRIMARY KEY(site_id, ingest_time, request_country)
-);
-
-SELECT create_distributed_table('powerbi_rollup','site_id');
-
-INSERT INTO powerbi_rollup SELECT 
-site_id,ingest_time,request_country,error_count,success_count,
-request_count,sum_response_time_msec FROM http_request_1min;
-```
-
-
