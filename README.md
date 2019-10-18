@@ -270,10 +270,10 @@ PRIMARY KEY(site_id, ingest_time, request_country)
 );
 
 SELECT create_distributed_table('powerbi_rollup','site_id');
-```
 
 INSERT INTO powerbi_rollup SELECT 
 site_id,ingest_time,request_country,error_count,success_count,
 request_count,sum_response_time_msec FROM http_request_1min;
+```
 
 
